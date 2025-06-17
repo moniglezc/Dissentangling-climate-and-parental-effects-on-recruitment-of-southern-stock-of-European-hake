@@ -1,6 +1,6 @@
 ---
-title: "Analysis"
-author: ""
+title: "Analysis_hke"
+author: "Monica Gonzalez Castrillon"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -53,7 +53,6 @@ library(gratia)
 
 
 # Read data --------------------------------------------------------------------
-
 model<-read.csv("modelo1.csv",header=TRUE,dec=".",sep=";")
 model$ssb_val<-as.numeric(model$ssb_val)
 model$ssb_low<-as.numeric(model$ssb_low)
@@ -79,7 +78,7 @@ ggplot(model,aes(x=ssb_val,y=rec_value))+geom_point()+
 ggplot(model,aes(x=L50_females,y=rec_value))+geom_point()+
   geom_smooth(method="loess")+theme_minimal()
 ggplot(model,aes(x=shannon_females,y=rec_value))+geom_point()+
-  (method="loess")+theme_minimal()
+  geom_smooth(method="loess")+theme_minimal()
 ggplot(model,aes(x=shannon_females_s1,y=rec_value))+geom_point()+
   geom_smooth(method="loess")+theme_minimal()
 ggplot(model,aes(x=shannon_females_s2,y=rec_value))+geom_point()+
@@ -95,7 +94,7 @@ ggplot(model,aes(x=nao,y=rec_value))+geom_point()+
 ggplot(model,aes(x=amo,y=rec_value))+geom_point()+
   geom_smooth(method="loess")+theme_minimal()
 
-vars<-c("rec_value","ssb_val","L50_females","shannon_females","shannon_females_s1", "shannon_females_s2", "shannon_females_s3", "shannon_females_4","sst","nao","amo")
+vars<-c("rec_value","ssb_val","L50_females","shannon_females","shannon_females_s1", "shannon_females_s2", "shannon_females_s3", "shannon_females_s4","sst","nao","amo")
   par(mfrow = c(2, 3))  # Layout for multiple boxplots
   for (v in vars) {
   boxplot(model[[v]], main = v)
@@ -334,7 +333,7 @@ final_plot<-final_plot+plot_layout(guides="collect")&
 print(final_plot)
 
 # Increase in deviance explained plot
-dev_exp<-c(summary(u1)$dev.expl,summary(u2)$dev.expl,summary(u3)$dev.expl,summary(u4)$dev.expl)
+dev_exp<-c(summary(p1)$dev.expl,summary(u2)$dev.expl,summary(u3)$dev.expl,summary(u4)$dev.expl)
 
 incremento<-c(NA,diff(dev_exp))
 labels_incremento<-c("",paste0("\u2206",round(incremento[-1]* 100,1),"%"))
@@ -361,7 +360,7 @@ min_year<-min(model_clean$year)
 max_year<-max(model_clean$year)
 clean_x_axis<-theme(axis.title.x=element_blank(),axis.text.x=element_blank())
 
-p1<-ggplot(model_clean,aes(x=yea,y=rec_value))+
+p1<-ggplot(model_clean,aes(x=year,y=rec_value))+
   geom_ribbon(aes(ymin=rec_low,ymax=rec_upp),fill="lightblue",alpha=0.3)+
   geom_line(color="#08306B")+theme_classic()+labs(title="",y="R")+
   theme(axis.title.y=element_text(size=9))+
@@ -384,7 +383,7 @@ p3<-ggplot(model_clean,aes(x=yea,y=L50_females))+
 p4<-ggplot(model_clean,aes(x=year,y=nao))+
   geom_line(color="#C3B935")+theme_classic()+labs(x="",y="NAO")+
   theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
+  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))
 
 p5<-ggplot(model_clean,aes(x=year,y=shannon_females_s1))+
   geom_line(color="#D29B6E")+theme_classic()+labs(y="H´season 1")+
