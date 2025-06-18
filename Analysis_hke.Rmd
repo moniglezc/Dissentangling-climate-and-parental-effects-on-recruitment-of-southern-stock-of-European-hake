@@ -217,7 +217,7 @@ m4<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
 m5<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
           s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data=model_clean)
 m6<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
-          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4)+s(year,bs="cr",k=4),data=model_clean)
+          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data=model_clean)
 
 
 models <- list(m1, m2, m3, m4, m5, m6)
