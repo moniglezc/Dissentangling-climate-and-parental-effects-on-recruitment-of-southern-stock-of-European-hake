@@ -294,7 +294,8 @@ summary(arma_res)
 checkresiduals(arma_res)
 
 ```
-
+Because Ljung-Box test indicated a potential temporal trend, the auto.arima() function
+was used to check for any temporal structure in the model residuals.
 The best-fitting model was an ARMA (0,0,0) with zero mean
 “The best-fitting time series model was an ARMA(0,0,0) with zero mean, 
 indicating that the data showed no significant autocorrelation or moving 
