@@ -54,6 +54,7 @@ library(gratia)
 
 # Read data --------------------------------------------------------------------
 model<-read.csv("modelo1.csv",header=TRUE,dec=".",sep=";")
+bucle for
 model$ssb_val<-as.numeric(model$ssb_val)
 model$ssb_low<-as.numeric(model$ssb_low)
 model$ssb_upp<-as.numeric(model$ssb_upp)
@@ -106,6 +107,7 @@ L50_females<-na.omit(model$L50_females)
 shannon_females<-na.omit(model$shannon_females)
 
 # Outliers ---------------------------------------------------------------------
+bucle
 tsoutliers::tso(ts(model$ssb_val,start=1980))
   #plot(tsoutliers::tso(ts(model$rec_value,start=1980)))
 tsoutliers::tso(ts(model$sst,start=1980))
@@ -146,6 +148,7 @@ model<-model_clean
 model_clean<-na.omit(model)
 
 # Normality assumption ---------------------------------------------------------
+bucle
 plot(model$ssb_val)
 hist(model$ssb_val)
 qqnorm(model$ssb_val)
@@ -193,6 +196,7 @@ qqline(model$amo,col="red")
 shapiro.test(model$amo) 
 
 # Homocedasticity --------------------------------------------------------------
+bucle
 model_lm<-lm(rec_value~ssb_val,data=model)
 plot(model_lm$fitted.values,model_lm$residuals) 
 abline(h=0,col="red")
@@ -220,20 +224,6 @@ vif(modelo_vif)
 
 ```
 
-
-## Multiple lineal model check 
-```{r echo=FALSE, message=TRUE, warning=FALSE, paged.print=FALSE}
-lm1<-lm(rec_value~ssb_val+L50_females+shannon_females_s1+shannon_females_s2
-        +shannon_females_s3+sst+amo,data=model_clean)
-summary(lm1)
-vif(lm1) # Multicolineality
-par(mfrow=c(2,2))
-plot(lm1)
-shapiro.test(resid(lm1)) # Normality of the residuals
-acf(resid(lm1))
-pacf(resid(lm1))
-ncvTest(lm1) # Breusch-Pagan Test for homocedasticity
-
 ```
 
 
@@ -257,7 +247,7 @@ p7<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females
 p8<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females_s2)
        +s(shannon_females_s3)+s(shannon_females_s4)+s(sst)+s(nao),data=model_clean)
 
-
+meter todos 
 u2<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4),data=model_clean)
 u3<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
           s(shannon_females_s3,bs ="cr",k=4),data=model_clean)
@@ -269,7 +259,6 @@ u5<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+s(shanno
 AIC(u2,u3,u4,u5)
 summary(u4)$sp.criterion 
 summary(u4)$r.sq
-  #anova(p4, u4, test = "Chisq")
 
 ```
 
@@ -297,12 +286,13 @@ Box.test(resid(u4),lag=10,type="Ljung-Box")
 adfTest(resid(u4),lag=1) 
 kpss.test(resid(u4),lshort=FALSE)
 t.test(resid(u4),mu=0)
-jarque.bera.test(resid(u4))
+jarque.bera.test(resid(u4)) redundante con shapiro
 
 res <- resid(u4)
 resp<-predict(u4)
 plot(res~resp,type="p",xlab="Predichos",ylab="Residuos")
 
+year
 # ARIMA for temporal dependecy
 arma_res<-auto.arima(resid(u4),stationary=FALSE,trace=TRUE,seasonal=FALSE,
                      approximation=FALSE,stepwise=TRUE)
