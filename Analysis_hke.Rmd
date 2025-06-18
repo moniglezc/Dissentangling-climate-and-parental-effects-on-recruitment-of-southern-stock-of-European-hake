@@ -16,8 +16,8 @@ output:
 ### Dissentangling climate and parental effects on recruitment of southern stock of European hake ###
 
 
-In this study we examine the influence of environmental variables—sea surface temperature (SST), the North Atlantic Oscillation (NAO), and the 
-Atlantic Multidecadal Oscillation (AMO)—alongside with spawning stock biomass (as a proxy for density dependence) and parental effects (size at first
+In this study we examine the influence of environmental variables —sea surface temperature (SST), the North Atlantic Oscillation (NAO), and the 
+Atlantic Multidecadal Oscillation (AMO)— alongside with spawning stock biomass (as a proxy for density dependence) and parental effects (size at first
 maturity by sex and the length structure of the spawning stock) on recruitment dynamics of the southern hake stock in Iberian Atlantic waters over the last few decades. 
 The annual variability in recruitment (R) was modelled using a Generalized Additive Model (GAM), with environmental and biological variables included as explanatory predictors. Additionally, we investigate the potential of the Shannon diversity index (H') as an indicator of the state of the southern hake population. 
 The findings of this research will provide valuable insights into the drivers of recruitment variability in the southern hake stock, which are crucial for sustainable management under changing conditions and for evaluating the utility of tools to assess the stock's state.
@@ -111,7 +111,7 @@ for (var in outlier_vars) {
 
 # Assumptions verification -----------------------------------------------------
 
-  # Normality
+# Normality
 
 vars_to_check <- c("rec_value","ssb_val", "L50_females","shannon_females_s1", "shannon_females_s2",
                    "shannon_females_s3", "shannon_females_s4", "sst", "nao", "amo")
@@ -128,11 +128,10 @@ for (var in vars_to_check) {
   qqline(data, col = "red")
   par(mfrow = c(1, 1))
   
-  # Shapiro-Wilk Test
   if (length(na.omit(data)) >= 3 && length(na.omit(data)) <= 5000) {
     print(shapiro.test(data))
   } else {
-    cat("Shapiro-Wilk test skipped (data size not in [3, 5000])\n")
+    cat("Shapiro-Wilk test skipped (data size not in [3, 5000])\n") # Shapiro-Wilk Test
   }
 }
 
@@ -155,7 +154,7 @@ for (var in predictors) {
 }
 
 
-# Correlation and colineality 
+# Correlation 
 
   # Corrplot
 vars <- c("rec_value","ssb_val", "L50_females","shannon_females_s1", "shannon_females_s2",
@@ -185,7 +184,6 @@ high_vif <- vif_values[vif_values > 5]
 cat("\nVariables with high multicollinearity (VIF > 5):\n") 
 print(high_vif)
 
-
 ```
 
 Due to high correlation (r > 0.60) between SST and AMO, these variables were 
@@ -207,7 +205,6 @@ while avoiding overfitting problems. When a spline was not required (edf=1),
 the variable was considered a linear effect. 
 
 
-
 ```{r, message=FALSE, warning=FALSE, paged.print=FALSE}
 
 # Variable selection and model fit ---------------------------------------------
@@ -226,13 +223,13 @@ m6<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
 models <- list(m1, m2, m3, m4, m5, m6)
 model_names <- paste0("m", 1:6)
 
-# Summaries
+  # Summaries of the model
 for (i in seq_along(models)) {
   cat("\n--- Summary of model m", i, " ---\n", sep = "")
   print(summary(models[[i]]))
 }
 
-# Comparison of models
+  # Comparison of models
 results <- data.frame(
   Model = character(),
   AIC = numeric(),
@@ -242,7 +239,6 @@ results <- data.frame(
   dev_expl = numeric(),
   stringsAsFactors = FALSE
 )
-
 
 for (i in seq_along(models)) {
   mod <- models[[i]]
@@ -258,14 +254,11 @@ for (i in seq_along(models)) {
 }
 print(results)
 
-
 ```
 
 ## Final GAM model 
 
 ```{r echo=FALSE, message=TRUE, warning=FALSE, paged.print=FALSE}
-
- # Final GAM model -------------------------------------------------------------
 
 gam_final<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
                  s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data = model_clean)
@@ -279,13 +272,13 @@ gam.check(gam_final)
   # Model validation  
 
     # Residuales
-plot(fitted(gam_final),resid(gam_final)) #Homocedasticity
+plot(fitted(gam_final),resid(gam_final)) # Homocedasticity
 abline(h=0,col="red")
-acf(resid(gam_final),lag.max=38,main="ACF") #Autocorrelation function
-pacf(resid(gam_final),lag.max =38,main="PACF") #Partial autocorrelation function
+acf(resid(gam_final),lag.max=38,main="ACF") # Autocorrelation function
+pacf(resid(gam_final),lag.max =38,main="PACF") # Partial autocorrelation function
 
 Box.test(resid(gam_final), type = "Ljung-Box") # Independence
-# Ljung-Box test indicates a potential temporal trend
+#Ljung-Box test indicates a potential temporal trend
 qqnorm(resid(gam_final))
 qqline(resid(gam_final), col = "red")
 shapiro.test(resid(gam_final)) # Normality assumption
@@ -312,6 +305,7 @@ with no detectable temporal dependence.
 ## Final Model plots
 
 ```{r}
+
 
 # Partial effects
 
