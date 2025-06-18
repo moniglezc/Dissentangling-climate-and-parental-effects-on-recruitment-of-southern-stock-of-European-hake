@@ -13,204 +13,160 @@ output:
 ---
 
 
-## Dissentangling climate and parental effects on recruitment of southern stock of European hake
+### Dissentangling climate and parental effects on recruitment of southern stock of European hake ###
+
+
+In this study we examine the influence of environmental variables—sea surface temperature (SST), the North Atlantic Oscillation (NAO), and the 
+Atlantic Multidecadal Oscillation (AMO)—alongside with spawning stock biomass (as a proxy for density dependence) and parental effects (size at first
+maturity by sex and the length structure of the spawning stock) on recruitment dynamics of the southern hake stock in Iberian Atlantic waters over the last few decades. 
+The annual variability in recruitment (R) was modelled using a Generalized Additive Model (GAM), with environmental and biological variables included as explanatory predictors. Additionally, we investigate the potential of the Shannon diversity index (H') as an indicator of the state of the southern hake population. 
+The findings of this research will provide valuable insights into the drivers of recruitment variability in the southern hake stock, which are crucial for sustainable management under changing conditions and for evaluating the utility of tools to assess the stock's state.
 
 
 ```{r, include=FALSE}
-# Load pckgs -------------------------------------------------------------------
-library(PerformanceAnalytics)
-library(FSA)
-library(TSA)
-library(FSAdata)
-library(dplyr)
-library(tidyverse)
-library(magrittr)
-library(lattice)
-library(Publish)
-library(sciplot)
-library(multcomp)
-library(car)
-library(knitr)
-library(gplots)
-library(zoo)
-library(fpp2) 
-library(tseries)
-library(imputeTS)
-library(forecast)
-library(lmtest)
-library(tidymv)
-library(ggplot2)
-library(GGally)
-library(Hmisc)
-library(fUnitRoots)
-library(itsadug)
-library(carData)
-library(corrplot)
-library(corrgram)
-library(DescTools)
-library(mgcv)
-library(gratia)
 
+# Load packages ----------------------------------------------------------------
 
-# Read data --------------------------------------------------------------------
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  PerformanceAnalytics, FSA, TSA, FSAdata, dplyr, tidyverse,
+  magrittr, lattice, Publish, sciplot, multcomp, car,
+  knitr, gplots, zoo, fpp2, tseries, imputeTS, forecast,
+  lmtest, tidymv, ggplot2, GGally, Hmisc, fUnitRoots,
+  itsadug, carData, corrplot, corrgram, DescTools, mgcv, gratia, patchwork
+)
+
+# Load data --------------------------------------------------------------------
+
 model<-read.csv("modelo1.csv",header=TRUE,dec=".",sep=";")
-bucle for
-model$ssb_val<-as.numeric(model$ssb_val)
-model$ssb_low<-as.numeric(model$ssb_low)
-model$ssb_upp<-as.numeric(model$ssb_upp)
-model$rec_value<-as.numeric(model$rec_value)
-model$rec_low<-as.numeric(model$rec_low)
-model$rec_upp<-as.numeric(model$rec_upp)
-model$L50_females<-as.numeric(model$L50_females)
-model$L50_males<-as.numeric(model$L50_males)
-model$L50<-as.numeric(model$L50)
+model <- model %>% 
+  mutate(across(c(ssb_val, ssb_low, ssb_upp, rec_value, rec_low, rec_upp,
+                  L50_females), as.numeric)) %>%
+  filter(year >= 1980) # Subset year
 
-# Subset year
-model<-subset(model,year >= 1980)
 ```
 
 
 ## Data exploration (Zuur et al 2010)
 
 ```{r, include=FALSE}
+
 # Exploratory plots ------------------------------------------------------------
-ggplot(model,aes(x=ssb_val,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=L50_females,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=shannon_females,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=shannon_females_s1,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=shannon_females_s2,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=shannon_females_s3,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=shannon_females_s4,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=sst,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=nao,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
-ggplot(model,aes(x=amo,y=rec_value))+geom_point()+
-  geom_smooth(method="loess")+theme_minimal()
 
-vars<-c("rec_value","ssb_val","L50_females","shannon_females","shannon_females_s1", "shannon_females_s2", "shannon_females_s3", "shannon_females_s4","sst","nao","amo")
-  par(mfrow = c(2, 3))  # Layout for multiple boxplots
-  for (v in vars) {
+  # Scatterplots
+
+vars_loess <- c("ssb_val", "L50_females", 
+                "shannon_females_s1", "shannon_females_s2", 
+                "shannon_females_s3", "shannon_females_s4", 
+                "sst", "nao", "amo", "year")
+
+for (var in vars_loess) {
+  print(
+    ggplot(model, aes_string(x = var, y = "rec_value")) +
+      geom_point() +
+      geom_smooth(method = "loess", se = TRUE) +
+      labs(title = paste("Recruitment vs", var)) +
+      theme_minimal()
+  )
+}
+
+# Boxplots
+
+box_vars <- c("rec_value", "ssb_val", "L50_females", 
+              "shannon_females_s1", "shannon_females_s2", 
+              "shannon_females_s3", "shannon_females_s4", 
+              "sst", "nao", "amo", "year")
+
+par(mfrow = c(2, 3)) 
+for (v in box_vars) {
   boxplot(model[[v]], main = v)
-  }
+}
 
-# NA´s
-sst<-na.omit(model$sst)
-L50_females<-na.omit(model$L50_females)
-shannon_females<-na.omit(model$shannon_females)
 
 # Outliers ---------------------------------------------------------------------
-bucle
-tsoutliers::tso(ts(model$ssb_val,start=1980))
-  #plot(tsoutliers::tso(ts(model$rec_value,start=1980)))
-tsoutliers::tso(ts(model$sst,start=1980))
-tsoutliers::tso(ts(model$nao,start=1980)) 
-tsoutliers::tso(ts(model$amo,start=1980))
-tsoutliers::tso(ts(model$L50_females,start=1980))
-tsoutliers::tso(ts(model$shannon_females,start=1980))
-tsoutliers::tso(ts(model$shannon_females_s1,start=1980))
-tsoutliers::tso(ts(model$shannon_females_s2,start=1980))
-tsoutliers::tso(ts(model$shannon_females_s3,start=1980))
-tsoutliers::tso(ts(model$shannon_females_s4,start=1980))
+  
+outlier_vars <- c("rec_value", "ssb_val", "L50_females","shannon_females_s1", 
+                  "shannon_females_s2", "shannon_females_s3", "shannon_females_s4",
+                  "sst", "nao", "amo"
+)
 
-  # Clean data
-outlier_years_rec_value<-c(1989,2005,2007,2023)
-outlier_years_nao<-2010
-outlier_years_L50<-1997
-outlier_years_L50_males<-2021
-outlier_years_shannon<-c(1994,2005)
-outlier_years_shannon_females<-c(1994,2005)
-outlier_years_shannon_females_s1<-1994
-outlier_years_shannon_females_s2<-1994
-outlier_years_shannon_females_s3<-2006
-outlier_years_shannon_females_s4<-2005
+model_clean <- model 
 
-model_clean<-model
-model_clean$rec_value[model_clean$year %in% outlier_years_rec_value]<-NA
-model_clean$nao[model_clean$year == outlier_years_nao]<-NA
-model_clean$L50[model_clean$year == outlier_years_L50]<-NA
-model_clean$L50_males[model_clean$year == outlier_years_L50_males]<-NA
-model_clean$shannon[model_clean$year == outlier_years_shannon]<-NA
-model_clean$shannon_females[model_clean$year == outlier_years_shannon_females]<-NA
-model_clean$shannon_females_s1[model_clean$year == outlier_years_shannon_females_s1]<-NA
-model_clean$shannon_females_s2[model_clean$year == outlier_years_shannon_females_s2]<-NA
-model_clean$shannon_females_s3[model_clean$year == outlier_years_shannon_females_s3]<-NA
-model_clean$shannon_females_s4[model_clean$year == outlier_years_shannon_females_s4]<-NA
+for (var in outlier_vars) {
+  cat("Processing variable:", var, "\n")
+  ts_data <- ts(model[[var]], start = 1980) 
+  tso_res <- tsoutliers::tso(ts_data)
 
-model<-model_clean
-model_clean<-na.omit(model)
+  if (!is.null(tso_res$outliers) && nrow(tso_res$outliers) > 0) {
+    outlier_indices <- tso_res$outliers$ind
+    outlier_years <- time(ts_data)[outlier_indices]
+    
+    cat("  Outliers detected in years:", outlier_years, "\n")
+    
+    model_clean[[var]][model_clean$year %in% outlier_years] <- NA
+  } else {
+    cat("  No outliers detected.\n")
+  }
+}
 
-# Normality assumption ---------------------------------------------------------
-bucle
-plot(model$ssb_val)
-hist(model$ssb_val)
-qqnorm(model$ssb_val)
-qqline(model$ssb_val,col="red")
-shapiro.test(model$ssb_val) 
+# Assumptions verification -----------------------------------------------------
 
-plot(model$rec_value)
-hist(model$rec_value)
-qqnorm(model$rec_value)
-qqline(model$rec_value,col="red")
-shapiro.test(model$rec_value) 
+  # Normality
 
-plot(model$L50_females)
-hist(model$L50_females)
-qqnorm(model$L50_females)
-qqline(model$L50_females,col="red")
-shapiro.test(model$L50_females) 
+vars_to_check <- c("rec_value","ssb_val", "L50_females","shannon_females_s1", "shannon_females_s2",
+                   "shannon_females_s3", "shannon_females_s4", "sst", "nao", "amo")
 
-plot(model$shannon_females)
-hist(model$shannon_females)
-qqnorm(model$shannon_females)
-qqline(model$shannon_females,col="red")
-shapiro.test(model$shannon_females) 
-shapiro.test(model$shannon_females_s1) 
-shapiro.test(model$shannon_females_s2) 
-shapiro.test(model$shannon_females_s3) 
-shapiro.test(model$shannon_females_s4) 
+for (var in vars_to_check) {
+  cat("\n\n---", var, "---\n")
+  
+  data <- model_clean[[var]]
+  
+  par(mfrow = c(1, 3)) 
+  plot(data, main = paste("Plot of", var), ylab = var)
+  hist(data, main = paste("Histogram of", var), xlab = var)
+  qqnorm(data, main = paste("QQ Plot of", var))
+  qqline(data, col = "red")
+  par(mfrow = c(1, 1))
+  
+  # Shapiro-Wilk Test
+  if (length(na.omit(data)) >= 3 && length(na.omit(data)) <= 5000) {
+    print(shapiro.test(data))
+  } else {
+    cat("Shapiro-Wilk test skipped (data size not in [3, 5000])\n")
+  }
+}
 
-plot(model$sst)
-hist(model$sst)
-qqnorm(model$sst)
-qqline(model$sst,col="red")
-shapiro.test(model$sst) 
+# Homocedasticity 
 
-plot(model$nao)
-hist(model$nao)
-qqnorm(model$nao)
-qqline(model$nao,col="red")
-shapiro.test(model$nao) 
+predictors <- c("ssb_val", "L50_females","shannon_females_s1", "shannon_females_s2",
+                "shannon_females_s3", "shannon_females_s4", "sst", "nao", "amo")
 
-plot(model$amo)
-hist(model$amo)
-qqnorm(model$amo)
-qqline(model$amo,col="red")
-shapiro.test(model$amo) 
+for (var in predictors) {
+  formula <- as.formula(paste("rec_value ~", var))
+  model_lm <- lm(formula, data = model_clean)
+  
+  plot(model_lm$fitted.values, model_lm$residuals,
+       main = paste("Residuals vs Fitted for", var),
+       xlab = "Fitted values", ylab = "Residuals", pch = 20, col = "darkblue")
+  abline(h = 0, col = "red", lwd = 2)
+  
+  cat("\nBreusch-Pagan Test for", var, "\n")
+  print(bptest(model_lm)) # Breusch-Pagan test result
+}
 
-# Homocedasticity --------------------------------------------------------------
-bucle
-model_lm<-lm(rec_value~ssb_val,data=model)
-plot(model_lm$fitted.values,model_lm$residuals) 
-abline(h=0,col="red")
-bptest(model_lm)
 
-# Correlation and colineality --------------------------------------------------
+# Correlation and colineality 
+
+  # Corrplot
+vars <- c("rec_value","ssb_val", "L50_females","shannon_females_s1", "shannon_females_s2",
+                "shannon_females_s3", "shannon_females_s4", "sst", "nao", "amo")
 numeric_vars<-model_clean[,vars]
-cor_matrix<-cor(numeric_vars,use="complete.obs")
+cor_matrix<-cor(numeric_vars, method = "spearman", use="complete.obs")
 round(cor_matrix,2)
 par(mfrow=c(1,1))
-corrplot::corrplot(cor_matrix,method="circle",type="upper",tl.col="black") 
+corrplot::corrplot(cor_matrix,method="circle",tl.col="black") 
 
-  # Spearman correlation coefficients
-pairs(model_clean[,vars])
+  # Pairwise plots
 ggpairs(
   model_clean[,vars],
   lower=list(continuous=wrap("points",alpha=0.5)),  
@@ -218,102 +174,154 @@ ggpairs(
   diag=list(continuous="densityDiag")  
 )
 
-  # Colineality 
-modelo_vif<-lm(rec_value~ssb_val+shannon_females,data=model_clean)
-vif(modelo_vif) 
+# Multicolineality 
+
+vars_to_use <- vars[!vars %in% c("rec_value", "shannon_females_s2", "shannon_females_s4")]
+full_formula <- as.formula(paste("rec_value ~", paste(vars_to_use, collapse = " + ")))
+full_model <- lm(full_formula, data = model_clean)
+vif_values <- vif(full_model)
+print(vif_values)
+high_vif <- vif_values[vif_values > 5]
+cat("\nVariables with high multicollinearity (VIF > 5):\n") 
+print(high_vif)
+
 
 ```
 
-```
+Due to high correlation (r > 0.60) between SST and AMO, these variables were 
+excluded from the model. Similarly, because of high collinearity (VIF > 5) 
+among the seasonal Shannon indices, seasons 2 and 4 were omitted from the model.
 
 
-### GAM modelling ###
+## GAM modelling 
 
-## Variable selection and model fit
+Covariables in the model were selected with a forward stepwise procedure based 
+on the Akaike information criterion (AIC) and an adjusted R-square. 
+The best (and most parsimonious) model was finally chosen based on the 
+compromise between low AIC values, a high adjusted R-square and significant predictors.
+
+In this case, GAMs were fitted using cubic regression splines as the basis for 
+the explanatory variables, with REML as the method for parameter estimation. 
+The basis dimension was restricted to a k=4 to allow sufficient flexibility 
+while avoiding overfitting problems. When a spline was not required (edf=1), 
+the variable was considered a linear effect. 
+
+
 
 ```{r, message=FALSE, warning=FALSE, paged.print=FALSE}
-p<-gam(rec_value~ssb_val,data=model_clean)
-p1<-gam(rec_value~ssb_val+L50_females,data=model_clean)
-p2<-gam(rec_value~ssb_val+s(L50_females),data=model_clean)
-p3<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1),data=model_clean)
-p4<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+
-          s(shannon_females_s2),data=model_clean)
-p5<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females_s2)
-       +s(shannon_females_s3),data=model_clean)
-p6<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females_s2)
-       +s(shannon_females_s3)+s(shannon_females_s4),data=model_clean)
-p7<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females_s2)
-       +s(shannon_females_s3)+s(shannon_females_s4)+s(nao),data=model_clean)
-p8<-gam(rec_value~ssb_val+s(L50_females)+s(shannon_females_s1)+s(shannon_females_s2)
-       +s(shannon_females_s3)+s(shannon_females_s4)+s(sst)+s(nao),data=model_clean)
 
-meter todos 
-u2<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4),data=model_clean)
-u3<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
-          s(shannon_females_s3,bs ="cr",k=4),data=model_clean)
-u4<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
-          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data = model_clean)
-u5<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+s(shannon_females_s2,bs="cr",k=4)+
-            s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data=model_clean)
+# Variable selection and model fit ---------------------------------------------
 
-AIC(u2,u3,u4,u5)
-summary(u4)$sp.criterion 
-summary(u4)$r.sq
+m1<-gam(rec_value~ssb_val,data=model_clean)
+m2<-gam(rec_value~ssb_val+L50_females,data=model_clean)
+m3<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4),data=model_clean)
+m4<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
+          s(shannon_females_s3,bs ="cr",k=4),data=model_clean) 
+m5<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
+          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data=model_clean)
+m6<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
+          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4)+s(year,bs="cr",k=4),data=model_clean)
+
+
+models <- list(m1, m2, m3, m4, m5, m6)
+model_names <- paste0("m", 1:6)
+
+# Summaries
+for (i in seq_along(models)) {
+  cat("\n--- Summary of model m", i, " ---\n", sep = "")
+  print(summary(models[[i]]))
+}
+
+# Comparison of models
+results <- data.frame(
+  Model = character(),
+  AIC = numeric(),
+  GCV = numeric(),
+  sp = numeric(),
+  r2 = numeric(),
+  dev_expl = numeric(),
+  stringsAsFactors = FALSE
+)
+
+
+for (i in seq_along(models)) {
+  mod <- models[[i]]
+  mod_summary <- summary(mod)
+  results[i, ] <- list(
+    Model = model_names[i],
+    AIC = AIC(mod),
+    GCV = mod$gcv.ubre,
+    sp = mod_summary$sp.criterion,
+    r2 = mod_summary$r.sq * 100,
+    dev_expl = mod_summary$dev.expl * 100 
+  )
+}
+print(results)
+
 
 ```
 
-## Final model validation
+## Final GAM model 
 
 ```{r echo=FALSE, message=TRUE, warning=FALSE, paged.print=FALSE}
-u4<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
-          s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data = model_clean)
 
-summary(u4)
-plot(u4, pages=1)
-gam.check(u4) 
-draw(u4)
+ # Final GAM model -------------------------------------------------------------
 
-qqnorm(resid(u4))
-qqline(resid(u4))
-shapiro.test(resid(u4))
-plot(fitted(u4),resid(u4))
+gam_final<-gam(rec_value~ssb_val+L50_females+s(shannon_females_s1,bs="cr",k=4)+
+                 s(shannon_females_s3,bs="cr",k=4)+s(nao,bs="cr",k=4),data = model_clean)
+
+summary(gam_final)
+draw(gam_final)
+#plot(gam_final, pages=1)
+AIC(gam_final)
+gam.check(gam_final) 
+
+  # Model validation  
+
+    # Residuales
+plot(fitted(gam_final),resid(gam_final)) #Homocedasticity
 abline(h=0,col="red")
+acf(resid(gam_final),lag.max=38,main="ACF") #Autocorrelation function
+pacf(resid(gam_final),lag.max =38,main="PACF") #Partial autocorrelation function
 
-acf(resid(u4),lag.max=38,main="ACF")
-pacf(resid(u4),lag.max =38,main="PACF")
+Box.test(resid(gam_final), type = "Ljung-Box") # Independence
+# Ljung-Box test indicates a potential temporal trend
+qqnorm(resid(gam_final))
+qqline(resid(gam_final), col = "red")
+shapiro.test(resid(gam_final)) # Normality assumption
+jarque.bera.test(resid(gam_final))
+adfTest(resid(gam_final),lag=1) # Stationary assumption
+kpss.test(resid(gam_final),lshort=FALSE)
+t.test(resid(gam_final),mu=0) # Zero mean assumption
 
-Box.test(resid(u4),lag=10,type="Ljung-Box")
-adfTest(resid(u4),lag=1) 
-kpss.test(resid(u4),lshort=FALSE)
-t.test(resid(u4),mu=0)
-jarque.bera.test(resid(u4)) redundante con shapiro
-
-res <- resid(u4)
-resp<-predict(u4)
-plot(res~resp,type="p",xlab="Predichos",ylab="Residuos")
-
-year
 # ARIMA for temporal dependecy
-arma_res<-auto.arima(resid(u4),stationary=FALSE,trace=TRUE,seasonal=FALSE,
+arma_res<-auto.arima(resid(gam_final),stationary=FALSE,trace=TRUE,seasonal=FALSE,
                      approximation=FALSE,stepwise=TRUE)
-(arma_res)
 summary(arma_res)
 checkresiduals(arma_res)
 
 ```
 
+The best-fitting model was an ARMA (0,0,0) with zero mean
+“The best-fitting time series model was an ARMA(0,0,0) with zero mean, 
+indicating that the data showed no significant autocorrelation or moving 
+average patterns. Essentially, the series behaves like white noise, 
+with no detectable temporal dependence.
 
-## Model plots
+
+## Final Model plots
 
 ```{r}
+
 # Partial effects
-plots<-draw(u4,residuals=FALSE,rug=TRUE,draw=FALSE)
+
+plots<-draw(gam_final,residuals=FALSE,rug=TRUE,draw=FALSE)
 plots_titled<-Map(function(p,title) {
   p+
     theme_classic(base_size=12)+
     labs(title=title)+
     theme(axis.title=element_blank())
-},plots,c("s(H´season 1)","S(H´season 3)","s(NAO)"))
+},plots,c("s(H´season 1)","s(H´season 3)","s(NAO)"))
 
 final_plot<-wrap_plots(plots_titled,ncol=2)
 
@@ -322,82 +330,81 @@ final_plot<-final_plot+plot_layout(guides="collect")&
   )
 print(final_plot)
 
+
 # Increase in deviance explained plot
-dev_exp<-c(summary(p1)$dev.expl,summary(u2)$dev.expl,summary(u3)$dev.expl,summary(u4)$dev.expl)
+
+dev_exp<-c(summary(m2)$dev.expl,summary(m3)$dev.expl,summary(m4)$dev.expl,summary(gam_final)$dev.expl)
 
 incremento<-c(NA,diff(dev_exp))
 labels_incremento<-c("",paste0("\u2206",round(incremento[-1]* 100,1),"%"))
 nombres_modelos<-c("SSB+L50","+H\u2032 s1","+H\u2032 s3","+NAO")
 
 df_modelos<-data.frame(Modelo=factor(nombres_modelos,levels=nombres_modelos),
-  Deviance=dev_exp,Incremento=labels_incremento)
+                       Deviance=dev_exp,Incremento=labels_incremento)
 
 ggplot(df_modelos,aes(x=Modelo,y=Deviance))+
-  geom_bar(stat="identity",fill="#C75B4A",alpha= 0.5)+
+  geom_bar(stat="identity",fill="#C75B4A",alpha= 0.9)+
   geom_text(aes(label=Incremento),vjust=-0.5,size=4)+
   labs(y="Deviance Explained (%)",x="Stepwise Inclusion")+
   theme_classic(base_size=14) +
   theme(axis.text.x=element_text(face="italic")
-)
-
-```
+  )
 
 
-## Temporal tendency of all variables
+# Temporal tendency of all variables 
 
-```{r}
-min_year<-min(model_clean$year)
-max_year<-max(model_clean$year)
+min_year<-min(model$year)
+max_year<-max(model$year)
 clean_x_axis<-theme(axis.title.x=element_blank(),axis.text.x=element_blank())
 
-p1<-ggplot(model_clean,aes(x=year,y=rec_value))+
+p1<-ggplot(model,aes(x=year,y=rec_value))+
   geom_ribbon(aes(ymin=rec_low,ymax=rec_upp),fill="lightblue",alpha=0.3)+
   geom_line(color="#08306B")+theme_classic()+labs(title="",y="R")+
   theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
   clean_x_axis
 
-p2<-ggplot(model_clean,aes(x=year,y=ssb_val))+
+p2<-ggplot(model,aes(x=year,y=ssb_val))+
   geom_ribbon(aes(ymin=ssb_low,ymax=ssb_upp),fill="lightblue",alpha=0.3)+
   geom_line(color="#5BAA9F")+theme_classic()+labs(y="SSB")+
   theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
   clean_x_axis
 
-p3<-ggplot(model_clean,aes(x=yea,y=L50_females))+
+p3<-ggplot(model,aes(x=year,y=L50_females))+
   geom_line(color="#A4C882")+theme_classic()+
   labs(y = expression(L[50]))+theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
   clean_x_axis
 
-p4<-ggplot(model_clean,aes(x=year,y=nao))+
+p4<-ggplot(model,aes(x=year,y=nao))+
   geom_line(color="#C3B935")+theme_classic()+labs(x="",y="NAO")+
   theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))
-
-p5<-ggplot(model_clean,aes(x=year,y=shannon_females_s1))+
+  
+p5<-ggplot(model,aes(x=year,y=shannon_females_s1))+
   geom_line(color="#D29B6E")+theme_classic()+labs(y="H´season 1")+
   theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
   scale_y_continuous(labels=scales::number_format(accuracy=0.1))+ 
   clean_x_axis
 
-p6<-ggplot(model_clean,aes(x=year,y=shannon_females_s2))+
+p6<-ggplot(model,aes(x=year,y=shannon_females_s2))+
   geom_line(color="#8B2E25")+theme_classic()+labs(y="H´season 2")+
   theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
   clean_x_axis
 
-p7<-ggplot(model_clean,aes(x=year,y=shannon_females_s3))+
+p7<-ggplot(model,aes(x=year,y=shannon_females_s3))+
   geom_line(color="#A97C91")+theme_classic()+
   labs(x="",y="H´season 3")+theme(axis.title.y=element_text(size=9))+
   scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+ 
   clean_x_axis
 
-p8<-ggplot(model_clean,aes(x=year,y=shannon_females_s4))+
+p8<-ggplot(model,aes(x=year,y=shannon_females_s4))+
   geom_line(color="#E7B6B7")+theme_classic()+labs(x="",y="H´season 4")+
   theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks= eq(min_year,max_year,by=5))
+  scale_x_continuous(limits=c(min_year,max_year),breaks= seq(min_year,max_year,by=5))
 
 p1+p2+p3+p4+plot_layout(ncol=1)
 p5+p6+p7+p8+plot_layout(ncol=1)
