@@ -16,13 +16,6 @@ output:
 ### Dissentangling climate and parental effects on recruitment of southern stock of European hake ###
 
 
-In this study we examine the influence of environmental variables —sea surface temperature (SST), the North Atlantic Oscillation (NAO), and the 
-Atlantic Multidecadal Oscillation (AMO)— alongside with spawning stock biomass (as a proxy for density dependence) and parental effects (size at first
-maturity by sex and the length structure of the spawning stock) on recruitment dynamics of the southern hake stock in Iberian Atlantic waters over the last few decades. 
-The annual variability in recruitment (R) was modelled using a Generalized Additive Model (GAM), with environmental and biological variables included as explanatory predictors. Additionally, we investigate the potential of the Shannon diversity index (H') as an indicator of the state of the southern hake population. 
-The findings of this research will provide valuable insights into the drivers of recruitment variability in the southern hake stock, which are crucial for sustainable management under changing conditions and for evaluating the utility of tools to assess the stock's state.
-
-
 ```{r, include=FALSE}
 
 # Load packages ----------------------------------------------------------------
@@ -269,16 +262,15 @@ draw(gam_final)
 AIC(gam_final)
 gam.check(gam_final) 
 
-  # Model validation  
+# Model validation  
 
-    # Residuales
+    # Residuals
 plot(fitted(gam_final),resid(gam_final)) # Homocedasticity
 abline(h=0,col="red")
 acf(resid(gam_final),lag.max=38,main="ACF") # Autocorrelation function
 pacf(resid(gam_final),lag.max =38,main="PACF") # Partial autocorrelation function
-
 Box.test(resid(gam_final), type = "Ljung-Box") # Independence
-#Ljung-Box test indicates a potential temporal trend
+  #Ljung-Box test indicates a potential temporal trend
 qqnorm(resid(gam_final))
 qqline(resid(gam_final), col = "red")
 shapiro.test(resid(gam_final)) # Normality assumption
@@ -287,23 +279,22 @@ adfTest(resid(gam_final),lag=1) # Stationary assumption
 kpss.test(resid(gam_final),lshort=FALSE)
 t.test(resid(gam_final),mu=0) # Zero mean assumption
 
-# ARIMA for temporal dependecy
-arma_res<-auto.arima(resid(gam_final),stationary=FALSE,trace=TRUE,seasonal=FALSE,
+  # ARIMA for temporal dependecy
+arma_res<-auto.arima(resid(gam_final),stationary=FALSE,trace=TRUE,seasonal=FALSE, 
                      approximation=FALSE,stepwise=TRUE)
 summary(arma_res)
 checkresiduals(arma_res)
 
 ```
-Because Ljung-Box test indicated a potential temporal trend, the auto.arima() function
-was used to check for any temporal structure in the model residuals.
-The best-fitting model was an ARMA (0,0,0) with zero mean
-“The best-fitting time series model was an ARMA(0,0,0) with zero mean, 
-indicating that the data showed no significant autocorrelation or moving 
-average patterns. Essentially, the series behaves like white noise, 
-with no detectable temporal dependence.
+
+Given that the Ljung-Box test suggested a potential temporal trend, the auto.arima() 
+function was used to check for any temporal structure in the model residuals.
+The best-fitting time series model was an ARMA(0,0,0) with zero mean, 
+indicating that the residuals do not exhibit any structured temporal 
+pattern and can be considered white noise. 
 
 
-## Final Model plots
+## Final model plots
 
 ```{r}
 
@@ -348,60 +339,46 @@ ggplot(df_modelos,aes(x=Modelo,y=Deviance))+
 
 # Temporal tendency of all variables 
 
-min_year<-min(model$year)
-max_year<-max(model$year)
-clean_x_axis<-theme(axis.title.x=element_blank(),axis.text.x=element_blank())
+min_year <- min(model$year)
+max_year <- max(model$year)
+year_breaks <- seq(min_year, max_year, by = 5)
+clean_x_axis <- theme(axis.title.x = element_blank(), axis.text.x = element_blank())
+shared_x <- scale_x_continuous(limits = c(min_year, max_year), breaks = year_breaks)
+label_size <- theme(axis.title.y = element_text(size = 9))
 
-p1<-ggplot(model,aes(x=year,y=rec_value))+
-  geom_ribbon(aes(ymin=rec_low,ymax=rec_upp),fill="lightblue",alpha=0.3)+
-  geom_line(color="#08306B")+theme_classic()+labs(title="",y="R")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
-  clean_x_axis
+plot_line <- function(data, y, color, ylab, clean_x = TRUE, show_x_label = FALSE) {
+  ggplot(data, aes(x = year, y = .data[[y]])) +
+    geom_line(color = color) +
+    theme_classic() +
+    labs(x = if (show_x_label) "Year" else NULL, y = ylab) +
+    label_size +
+    shared_x +
+    if (clean_x) clean_x_axis else NULL
+}
 
-p2<-ggplot(model,aes(x=year,y=ssb_val))+
-  geom_ribbon(aes(ymin=ssb_low,ymax=ssb_upp),fill="lightblue",alpha=0.3)+
-  geom_line(color="#5BAA9F")+theme_classic()+labs(y="SSB")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
-  clean_x_axis
+plot_ribbon_line <- function(data, y, ymin, ymax, color, ylab, clean_x = TRUE) {
+  ggplot(data, aes(x = year, y = .data[[y]])) +
+    geom_ribbon(aes(ymin = .data[[ymin]], ymax = .data[[ymax]]),
+                fill = "lightblue", alpha = 0.3) +
+    geom_line(color = color) +
+    theme_classic() +
+    labs(y = ylab) +
+    label_size +
+    shared_x +
+    if (clean_x) clean_x_axis else NULL
+}
 
-p3<-ggplot(model,aes(x=year,y=L50_females))+
-  geom_line(color="#A4C882")+theme_classic()+
-  labs(y = expression(L[50]))+theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
-  clean_x_axis
+p1 <- plot_ribbon_line(model, "rec_value", "rec_low", "rec_upp", "#08306B", "R")
+p2 <- plot_ribbon_line(model, "ssb_val", "ssb_low", "ssb_upp", "#5BAA9F", "SSB")
+p3 <- plot_line(model, "L50_females", "#A4C882", expression(L[50]))
+p4 <- plot_line(model, "nao", "#C3B935", "NAO", clean_x = FALSE, show_x_label = TRUE)
 
-p4<-ggplot(model,aes(x=year,y=nao))+
-  geom_line(color="#C3B935")+theme_classic()+labs(x="",y="NAO")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))
-  
-p5<-ggplot(model,aes(x=year,y=shannon_females_s1))+
-  geom_line(color="#D29B6E")+theme_classic()+labs(y="H´season 1")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
-  scale_y_continuous(labels=scales::number_format(accuracy=0.1))+ 
-  clean_x_axis
+p5 <- plot_line(model, "shannon_females_s1", "#D29B6E", "H´season 1")
+p6 <- plot_line(model, "shannon_females_s2", "#8B2E25", "H´season 2")
+p7 <- plot_line(model, "shannon_females_s3", "#A97C91", "H´season 3")
+p8 <- plot_line(model, "shannon_females_s4", "#E7B6B7", "H´season 4", clean_x = FALSE, show_x_label = TRUE)
 
-p6<-ggplot(model,aes(x=year,y=shannon_females_s2))+
-  geom_line(color="#8B2E25")+theme_classic()+labs(y="H´season 2")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+
-  clean_x_axis
-
-p7<-ggplot(model,aes(x=year,y=shannon_females_s3))+
-  geom_line(color="#A97C91")+theme_classic()+
-  labs(x="",y="H´season 3")+theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks=seq(min_year,max_year,by=5))+ 
-  clean_x_axis
-
-p8<-ggplot(model,aes(x=year,y=shannon_females_s4))+
-  geom_line(color="#E7B6B7")+theme_classic()+labs(x="",y="H´season 4")+
-  theme(axis.title.y=element_text(size=9))+
-  scale_x_continuous(limits=c(min_year,max_year),breaks= seq(min_year,max_year,by=5))
-
-p1+p2+p3+p4+plot_layout(ncol=1)
-p5+p6+p7+p8+plot_layout(ncol=1)
+(p1 / p2 / p3 / p4) + plot_layout(ncol = 1)
+(p5 / p6 / p7 / p8) + plot_layout(ncol = 1)
 
 ```
